@@ -1,21 +1,35 @@
-﻿# German-Company-Scraper - Agent Guidelines
+# German-Company-Scraper — Agent Guidelines
 
-## 1. Overview
-German-Company-Scraper is a repository managed by vladvinys-vv.
-Standardized on default branch main.
-Web scraping and directory extraction pipeline for German company registries and corporate registers.
+## 1. Project Overview
+German Company Scraper is a Python-based open data extraction engine for querying, validating, and structuring company registration records from German corporate registries (`handelsregister.de`, `unternehmensregister.de`, `bund.dev`).
+
+---
 
 ## 2. Directory Layout
-- README.md: Project description.
-- .gitignore: Standard exclusion rules.
-- AGENTS.md: Guidelines for AI agents and automated tools.
-- HANDOFF.md: Project status and handoff notes.
+- `src/`: Core Python modules (`handelsregister_client.py`, parsers, rate limiters).
+- `tests/`: Automated pytest unit tests and mocked API responses.
+- `requirements.txt`: Python dependencies (`httpx`, `beautifulsoup4`, `pydantic`, `pytest`).
+- `README.md`: Architecture overview and register type references.
 
-## 3. Workflow Rules
-- Target branch is main.
-- Ensure clean commits and avoid committing sensitive credentials or temporary files.
+---
 
-## AI Agent Skills & MCP Integration (2026)
+## 3. Development Commands
+```bash
+pip install -r requirements.txt
+python -m py_compile src/handelsregister_client.py
+pytest tests/
+```
+
+---
+
+## 4. Key Constraints & Legal Guardrails
+1. **Respect Upstream Limits:** Respect robots.txt and apply minimum 1-second delays between unauthenticated queries to public portals.
+2. **Data Privacy (GDPR / DSGVO):** Filter out personal identification numbers or private residential addresses of managing directors (`Geschäftsführer`) unless publicly mandated.
+3. **Branch Discipline:** Default target branch is `main`. All agent commits target `main`.
+
+---
+
+## 5. AI Agent Skills & MCP Integration (2026)
 
 ### Recommended Skill Collections
 ```bash
@@ -62,7 +76,7 @@ Use native `task(agent="...", ...)` for specialized work:
 
 ### Verification Gates (Required per Commit)
 ```bash
-pytest -q && make verify
-# Secret scanning
+python -m py_compile src/handelsregister_client.py
+pytest -q
 npx -y gitleaks detect --no-git -v
 ```

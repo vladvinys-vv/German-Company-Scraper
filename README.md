@@ -1,27 +1,78 @@
-﻿# German Company Scraper
+# German Company Scraper (Handelsregister & Unternehmensregister)
 
-Web scraping and directory extraction pipeline for German company registries and corporate registers.
+Modern Python scraping and data extraction pipeline for German corporate registries (`Handelsregister.de`, `Unternehmensregister.de`, `Bundesanzeiger`), integrating open data standards inspired by [`bundesAPI/handelsregister`](https://github.com/bundesAPI/handelsregister) and `bund.dev`.
 
-## 🇩🇪 German Government API Integrations
+---
+
+## 1. Key Capabilities
+- **Handelsregister Search:** Query companies across German federal states by name, city, register court (`Amtsgericht`), and register number (`HRA`, `HRB`, `GnR`, `PR`, `VR`).
+- **Structured Schema:** Exports strongly typed models (`CompanyRecord`) with Pydantic / Dataclasses.
+- **Open Data & API Integration:**
+  - `bund.dev` / `bundesAPI/handelsregister` OpenAPI specifications.
+  - Integration readiness for North Data, OpenRegister, and ELSTER company lookup.
+- **Resilient Retrieval:** Asynchronous `httpx` client with exponential backoff, user-agent rotation, and rate-limiting to prevent IP restrictions.
+
+---
+
+## 2. 🇩🇪 German Government & Registry API Integrations
 
 This scraper integrates with official German public APIs for comprehensive company data:
 
 | API | Purpose | Auth | Integration |
 |---|---|---|---|
 | [OpenRegister (Handelsregister)](https://openregister.de/api) | 4M+ German companies: ownership chains, financials, official registry documents. SDKs: Python/TS/Go. Zapier/n8n/MCP. | `apiKey` | Primary data source for company enrichment |
-| [Handelsregister.ai](https://handelsregister.ai/) | Modern Handelsregister API: verified company data, financial KPIs, shareholders, insolvency notices. CRM sync (Salesforce, HubSpot, Pipedrive), bulk export. | `apiKey` | Enriched company verification |
+| [Handelsregister.ai](https://handelsregister.ai/) | Modern Handelsregister API: verified company data, financial KPIs, shareholders, insolvency notices. CRM sync, bulk export. | `apiKey` | Enriched company verification |
 | [OffeneRegister (Bulk)](https://github.com/B2Trust-Infrastructure/registry-api-examples/tree/main/germany-offeneregister) | ~5.3M companies, JSONL bulk dump (1GB compressed). Open Knowledge Foundation Germany. | No | Initial dataset seeding |
 | [Bundestag DIP API](https://dip.bundestag.de/ueber-dip/hilfe/api) | Laws, proceedings, persons, lobby register, party donations. | No | Legal compliance tracking |
 | [Bundestag Live API](https://bundestag.api.bund.dev/) | Real-time plenary sessions, committees, agenda. | No | Legislative monitoring |
-| [Bundespuls](https://bundespuls.de/) | Real-time Bundestag pulse: DIP, lobby register, donations. WebSocket + REST. | No | Live legislative updates |
 | [OpenPlz API](https://openplzapi.org/de/Localities) | Free German postal codes and cities database. | No | Address validation & autocomplete |
 | [Feiertage API](https://feiertage-api.de/api/?jahr=2026) | Official holidays by Bundesland. | No | Scheduling optimizations |
 | [Gesetze im Internet](https://www.gesetze-im-internet.de/) | BGB, HGB, DSGVO structured legal texts. | No | Legal reference for data handling |
-| [BrightSky / DWD](https://api.brightsky.dev/) | German Weather Service forecasts & historical data. | No | Weather-aware operations |
 
-> **Note:** APIs marked with `apiKey` require environment variables in `.env`. MCP-ready APIs work with Model Context Protocol agents.
+---
 
-## 🤖 AI Agent Skills Integration
+## 3. Register Types Reference (Germany)
+| Register Type | German Abbreviation | Entity Types |
+|---|---|---|
+| **Abteilung A** | `HRA` | Einzelkaufleute (e.K.), Offene Handelsgesellschaften (oHG), Kommanditgesellschaften (KG, GmbH & Co. KG) |
+| **Abteilung B** | `HRB` | Gesellschaften mit beschränkter Haftung (GmbH, UG haftungsbeschränkt), Aktiengesellschaften (AG) |
+| **Genossenschaftsregister** | `GnR` | Eingetragene Genossenschaften (eG) |
+| **Partnerschaftsregister** | `PR` | Partnerschaftsgesellschaften (PartG) für Freie Berufe |
+| **Vereinsregister** | `VR` | Eingetragene Vereine (e.V.) |
+
+---
+
+## 4. Quick Start
+
+### Installation
+```bash
+python -m venv .venv
+# On Windows:
+.venv\Scripts\activate
+# On Linux/macOS:
+source .venv/bin/activate
+
+pip install -r requirements.txt
+```
+
+### Usage Example
+```python
+import asyncio
+from src.handelsregister_client import HandelsregisterScraper
+
+async def main():
+    scraper = HandelsregisterScraper()
+    results = await scraper.search_company("Siemens", state="Bayern")
+    for company in results:
+        print(f"{company.name} | {company.register_court} {company.register_number} ({company.status})")
+
+if __name__ == "__main__":
+    asyncio.run(main())
+```
+
+---
+
+## 5. 🤖 AI Agent Skills Integration
 
 ### Recommended Skill Collections
 ```bash
@@ -56,50 +107,7 @@ Use native `task(agent="...", ...)` for specialized work:
 - `task(agent="debugger", ...)` — Test failures, scraping errors, parsing issues
 - `task(agent="revisor", ...)` — Pre-commit: security scan, coverage, diff analysis
 
-### Verification Gates (Required per Commit)
-```bash
-pytest -q && make verify
-# Secret scanning
-npx -y gitleaks detect --no-git -v
-```
+---
 
-## Guidelines
-See [AGENTS.md](AGENTS.md) and [HANDOFF.md](HANDOFF.md) for architectural and development guidelines.
-
-## Architecture
-
-### Pipeline Stages
-1. **Source Discovery** — Identify targets from Handelsregister, OpenRegister, OffeneRegister
-2. **Extraction** — Parse HTML, JSON, PDF from official sources
-3. **Enrichment** — Cross-reference with OpenRegister, Handelsregister.ai, Bundestag APIs
-4. **Validation** — Verify data integrity, deduplicate, normalize
-5. **Storage** — Persist to structured format (JSON, CSV, SQLite, PostgreSQL)
-6. **Export** — Generate reports, feeds, API endpoints
-
-### Data Models
-- Company: HRB/HRA number, name, legal form, address, registration court
-- Officers: Geschäftsführer, Vorstände, legal representatives
-- Financials: Revenue, employees, balance sheet data (from Bundesanzeiger)
-- Ownership: Shareholders, parent companies, UBO chains
-- Events: Insolvency, mergers, address changes, capital measures
-
-## Quick Start
-
-```bash
-# Clone and setup
-git clone https://github.com/vladvinys-vv/German-Company-Scraper.git
-cd German-Company-Scraper
-python3 -m venv .venv
-source .venv/bin/activate
-pip install -r requirements.txt
-
-# Configure environment
-cp .env.example .env
-# Add OPENREGISTER_API_KEY, HANDELSREGISTER_API_KEY
-
-# Run scraper
-python -m src.scraper --source openregister --limit 100
-```
-
-## License
-Private - All rights reserved
+## 6. Architecture & Guidelines
+For detailed agent directives and maintenance standards, see [AGENTS.md](AGENTS.md) and [HANDOFF.md](HANDOFF.md).

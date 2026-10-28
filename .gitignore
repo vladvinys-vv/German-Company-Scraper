@@ -1,4 +1,21 @@
-﻿# OS metadata
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+env/
+venv/
+.venv/
+ENV/
+build/
+dist/
+*.egg-info/
+.pytest_cache/
+.coverage
+htmlcov/
+
+# OS metadata
 .DS_Store
 Thumbs.db
 desktop.ini
@@ -7,6 +24,10 @@ desktop.ini
 .env
 .env.*
 !.env.example
+
+# IDE
+.idea/
+.vscode/
 
 # Logs
 *.log
