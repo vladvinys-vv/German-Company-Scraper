@@ -111,3 +111,6 @@ Use native `task(agent="...", ...)` for specialized work:
 
 ## 6. Architecture & Guidelines
 For detailed agent directives and maintenance standards, see [AGENTS.md](AGENTS.md) and [HANDOFF.md](HANDOFF.md).
+
+## License
+MIT License — see [LICENSE](LICENSE) for details.
